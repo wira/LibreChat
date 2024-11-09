@@ -29,7 +29,6 @@ services:
       - mongodb
       # - rag_api
     restart: always
-    user: "${UID}:${GID}"
     extra_hosts:
     - "host.docker.internal:host-gateway"
     env_file:
@@ -52,7 +51,6 @@ services:
     container_name: chat-mongodb
     image: mongo
     restart: always
-    user: "${UID}:${GID}"
     networks:
       - internal
     volumes:
@@ -63,12 +61,11 @@ services:
     container_name: chat-meilisearch
     image: getmeili/meilisearch:v1.7.3
     restart: always
-    user: "${UID}:${GID}"
-    env_file:
-      - .env
     environment:
+      - SEARCH=true
       - MEILI_HOST=http://meilisearch:7700
       - MEILI_NO_ANALYTICS=true
+      - MEILI_MASTER_KEY=${MEILI_MASTER_KEY}
     networks:
       - internal
     volumes:
