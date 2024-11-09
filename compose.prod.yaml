@@ -81,14 +81,11 @@ services:
   
   rag_api:
     image: ghcr.io/danny-avila/librechat-rag-api-dev-lite:latest
-    environment:
-      - DB_HOST=vectordb
-      - RAG_PORT=8000
     restart: always
     depends_on:
       - vectordb
     env_file:
-      - .env
+      - .rag_api.env
  
 networks:
   librechat_default:
