@@ -9,6 +9,7 @@ services:
       - "./letsencrypt:/letsencrypt"
     networks:
       - web
+      - internal
     command:
       - "--api.insecure=false"
       - "--providers.docker=true"
@@ -35,6 +36,7 @@ services:
       - .api.env
     networks:
       - web
+      - internal
     volumes:
       - ./librechat.yaml:/app/librechat.yaml
       - api_images:/app/client/public/images
@@ -51,6 +53,8 @@ services:
     image: mongo
     restart: always
     user: "${UID}:${GID}"
+    networks:
+      - internal
     volumes:
       - mongodb_data:/data/db
     command: mongod --noauth
@@ -65,6 +69,8 @@ services:
     environment:
       - MEILI_HOST=http://meilisearch:7700
       - MEILI_NO_ANALYTICS=true
+    networks:
+      - internal
     volumes:
       - meilisearch_data:/meili_data
   
@@ -87,6 +93,8 @@ services:
   #     - .rag_api.env
  
 networks:
+  internal:
+    external: false
   web:
     external: true
 
