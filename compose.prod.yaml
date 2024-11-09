@@ -8,7 +8,7 @@ services:
       - "/var/run/docker.sock:/var/run/docker.sock:ro"
       - "./letsencrypt:/letsencrypt"
     networks:
-      - librechat_default
+      - web
     command:
       - "--api.insecure=false"
       - "--providers.docker=true"
@@ -34,7 +34,7 @@ services:
     env_file:
       - .api.env
     networks:
-      - librechat_default
+      - web
     volumes:
       - ./librechat.yaml:/app/librechat.yaml
       - api_images:/app/client/public/images
@@ -87,7 +87,7 @@ services:
   #     - .rag_api.env
  
 networks:
-  librechat_default:
+  web:
     external: true
 
 volumes:
