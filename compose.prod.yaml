@@ -28,6 +28,7 @@ services:
       - mongodb
       # - rag_api
     restart: always
+    user: "${UID}:${GID}"
     extra_hosts:
     - "host.docker.internal:host-gateway"
     env_file:
@@ -36,8 +37,8 @@ services:
       - librechat_default
     volumes:
       - ./librechat.yaml:/app/librechat.yaml
-      - ./images:/app/client/public/images
-      - ./logs:/app/api/logs
+      - api_images:/app/client/public/images
+      - api_logs:/app/api/logs
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.librechat.rule=Host(`${URL_API}`)"
@@ -47,27 +48,25 @@ services:
 
   mongodb:
     container_name: chat-mongodb
-    # ports:  # Uncomment this to access mongodb from outside docker, not safe in deployment
-    #   - 27018:27017
     image: mongo
     restart: always
+    user: "${UID}:${GID}"
     volumes:
-      - ./data-node:/data/db
+      - mongodb_data:/data/db
     command: mongod --noauth
   
   meilisearch:
     container_name: chat-meilisearch
     image: getmeili/meilisearch:v1.7.3
     restart: always
-    # ports: # Uncomment this to access meilisearch from outside docker
-    #   - 7700:7700 # if exposing these ports, make sure your master key is not the default value
+    user: "${UID}:${GID}"
     env_file:
       - .env
     environment:
       - MEILI_HOST=http://meilisearch:7700
       - MEILI_NO_ANALYTICS=true
     volumes:
-      - ./meili_data_v1.7:/meili_data
+      - meilisearch_data:/meili_data
   
   # vectordb:
   #   image: ankane/pgvector:latest
@@ -91,5 +90,9 @@ networks:
   librechat_default:
     external: true
 
-# volumes:
-#   pgdata2:
+volumes:
+  api_images:
+  api_logs:
+  mongodb_data:
+  meilisearch_data:
+  # pgdata2:
