@@ -60,7 +60,7 @@ services:
   
   meilisearch:
     container_name: chat-meilisearch
-    image: getmeili/meilisearch:v1.7.3
+    image: getmeili/meilisearch:v1.12.3
     restart: always
     environment:
       - SEARCH=true
