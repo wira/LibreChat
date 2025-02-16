@@ -4,9 +4,9 @@ import {
   Constants,
   QueryKeys,
   ContentTypes,
+  EModelEndpoint,
   parseCompactConvo,
   isAssistantsEndpoint,
-  EModelEndpoint,
 } from 'librechat-data-provider';
 import { useSetRecoilState, useResetRecoilState, useRecoilValue } from 'recoil';
 import type {
@@ -29,6 +29,15 @@ const logChatRequest = (request: Record<string, unknown>) => {
   logger.log('=====================================\nAsk function called with:');
   logger.dir(request);
   logger.log('=====================================');
+};
+
+const usesContentStream = (endpoint: EModelEndpoint | undefined, endpointType?: string) => {
+  if (endpointType === EModelEndpoint.custom) {
+    return true;
+  }
+  if (endpoint === EModelEndpoint.openAI || endpoint === EModelEndpoint.azureOpenAI) {
+    return true;
+  }
 };
 
 export default function useChatFunctions({
@@ -62,6 +71,7 @@ export default function useChatFunctions({
   const setShowStopButton = useSetRecoilState(store.showStopButtonByIndex(index));
   const setFilesToDelete = useSetFilesToDelete();
   const getSender = useGetSender();
+  const isTemporary = useRecoilValue(store.isTemporary);
 
   const queryClient = useQueryClient();
   const { getExpiry } = useUserKey(conversation?.endpoint ?? '');
@@ -139,7 +149,7 @@ export default function useChatFunctions({
     );
 
     let thread_id = parentMessage?.thread_id ?? latestMessage?.thread_id;
-    if (!thread_id) {
+    if (thread_id == null) {
       thread_id = currentMessages.find((message) => message.thread_id)?.thread_id;
     }
 
@@ -160,7 +170,10 @@ export default function useChatFunctions({
         endpointType,
         overrideConvoId,
         overrideUserMessageId,
-        artifacts: getArtifactsMode({ codeArtifacts, includeShadcnui, customPromptMode }),
+        artifacts:
+          endpoint !== EModelEndpoint.agents
+            ? getArtifactsMode({ codeArtifacts, includeShadcnui, customPromptMode })
+            : undefined,
       },
       convo,
     ) as TEndpointOption;
@@ -168,22 +181,26 @@ export default function useChatFunctions({
       endpointOption.key = getExpiry();
       endpointOption.thread_id = thread_id;
       endpointOption.modelDisplayLabel = modelDisplayLabel;
+    } else {
+      endpointOption.key = new Date(Date.now() + 60 * 60 * 1000).toISOString();
     }
     const responseSender = getSender({ model: conversation?.model, ...endpointOption });
 
     const currentMsg: TMessage = {
       text,
       sender: 'User',
+      clientTimestamp: new Date().toLocaleString('sv').replace(' ', 'T'),
       isCreatedByUser: true,
       parentMessageId,
       conversationId,
-      messageId: isContinued && messageId ? messageId : intermediateId,
+      messageId: isContinued && messageId != null && messageId ? messageId : intermediateId,
       thread_id,
       error: false,
     };
 
-    const reuseFiles = (isRegenerate || resubmitFiles) && parentMessage?.files;
-    if (setFiles && reuseFiles && parentMessage.files?.length) {
+    const reuseFiles =
+      (isRegenerate || resubmitFiles) && parentMessage?.files && parentMessage.files.length > 0;
+    if (setFiles && reuseFiles === true) {
       currentMsg.files = parentMessage.files;
       setFiles(new Map());
       setFilesToDelete({});
@@ -214,8 +231,8 @@ export default function useChatFunctions({
       conversationId,
       unfinished: false,
       isCreatedByUser: false,
-      isEdited: isEditOrContinue,
-      iconURL: convo.iconURL,
+      iconURL: convo?.iconURL,
+      model: convo?.model,
       error: false,
     };
 
@@ -242,6 +259,17 @@ export default function useChatFunctions({
         },
       ];
       setShowStopButton(true);
+    } else if (usesContentStream(endpoint, endpointType)) {
+      initialResponse.text = '';
+      initialResponse.content = [
+        {
+          type: ContentTypes.TEXT,
+          [ContentTypes.TEXT]: {
+            value: responseText,
+          },
+        },
+      ];
+      setShowStopButton(true);
     } else {
       setShowStopButton(true);
     }
@@ -250,6 +278,7 @@ export default function useChatFunctions({
       currentMessages = currentMessages.filter((msg) => msg.messageId !== responseMessageId);
     }
 
+    logger.log('message_state', initialResponse);
     const submission: TSubmission = {
       conversation: {
         ...conversation,
@@ -267,6 +296,7 @@ export default function useChatFunctions({
       isContinued,
       isRegenerate,
       initialResponse,
+      isTemporary,
     };
 
     if (isRegenerate) {

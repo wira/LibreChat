@@ -1,14 +1,13 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import type { MouseEvent, FocusEvent, KeyboardEvent } from 'react';
 import { useArchiveConversationMutation } from '~/data-provider';
-import useConversations from './useConversations';
 import { NotificationSeverity } from '~/common';
 import { useToastContext } from '~/Providers';
-import useLocalize from '../useLocalize';
+import useLocalize, { TranslationKeys } from '../useLocalize';
 import useNewConvo from '../useNewConvo';
 
 export default function useArchiveHandler(
-  conversationId: string,
+  conversationId: string | null,
   shouldArchive: boolean,
   retainView: () => void,
 ) {
@@ -16,30 +15,32 @@ export default function useArchiveHandler(
   const navigate = useNavigate();
   const { showToast } = useToastContext();
   const { newConversation } = useNewConvo();
-  const { refreshConversations } = useConversations();
   const { conversationId: currentConvoId } = useParams();
 
-  const archiveConvoMutation = useArchiveConversationMutation(conversationId);
+  const archiveConvoMutation = useArchiveConversationMutation(conversationId ?? '');
 
   return async (e?: MouseEvent | FocusEvent | KeyboardEvent) => {
     if (e) {
       e.preventDefault();
     }
-    const label = shouldArchive ? 'archive' : 'unarchive';
+    const convoId = conversationId ?? '';
+    if (!convoId) {
+      return;
+    }
+    const label: TranslationKeys = shouldArchive ? 'com_ui_archive_error' : 'com_ui_unarchive_error';
     archiveConvoMutation.mutate(
-      { conversationId, isArchived: shouldArchive },
+      { conversationId: convoId, isArchived: shouldArchive },
       {
         onSuccess: () => {
-          if (currentConvoId === conversationId || currentConvoId === 'new') {
+          if (currentConvoId === convoId || currentConvoId === 'new') {
             newConversation();
             navigate('/c/new', { replace: true });
           }
-          refreshConversations();
           retainView();
         },
         onError: () => {
           showToast({
-            message: localize(`com_ui_${label}_error`),
+            message: localize(label),
             severity: NotificationSeverity.ERROR,
             showIcon: true,
           });

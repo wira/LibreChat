@@ -154,6 +154,24 @@ describe('getModelMaxTokens', () => {
   });
 
   test('should return correct tokens for partial match - Google models', () => {
+    expect(getModelMaxTokens('gemini-2.0-flash-lite-preview-02-05', EModelEndpoint.google)).toBe(
+      maxTokensMap[EModelEndpoint.google]['gemini-2.0-flash-lite'],
+    );
+    expect(getModelMaxTokens('gemini-2.0-flash-001', EModelEndpoint.google)).toBe(
+      maxTokensMap[EModelEndpoint.google]['gemini-2.0-flash'],
+    );
+    expect(getModelMaxTokens('gemini-2.0-flash-exp', EModelEndpoint.google)).toBe(
+      maxTokensMap[EModelEndpoint.google]['gemini-2.0-flash'],
+    );
+    expect(getModelMaxTokens('gemini-2.0-pro-exp-02-05', EModelEndpoint.google)).toBe(
+      maxTokensMap[EModelEndpoint.google]['gemini-2.0'],
+    );
+    expect(getModelMaxTokens('gemini-1.5-flash-8b', EModelEndpoint.google)).toBe(
+      maxTokensMap[EModelEndpoint.google]['gemini-1.5-flash-8b'],
+    );
+    expect(getModelMaxTokens('gemini-1.5-flash-thinking', EModelEndpoint.google)).toBe(
+      maxTokensMap[EModelEndpoint.google]['gemini-1.5-flash'],
+    );
     expect(getModelMaxTokens('gemini-1.5-pro-latest', EModelEndpoint.google)).toBe(
       maxTokensMap[EModelEndpoint.google]['gemini-1.5'],
     );
@@ -247,6 +265,32 @@ describe('getModelMaxTokens', () => {
 
   test('should return undefined for a model when using an unsupported endpoint', () => {
     expect(getModelMaxTokens('azure-gpt-3', 'unsupportedEndpoint')).toBeUndefined();
+  });
+
+  test('should return correct max context tokens for o1-series models', () => {
+    // Standard o1 variations
+    const o1Tokens = maxTokensMap[EModelEndpoint.openAI]['o1'];
+    expect(getModelMaxTokens('o1')).toBe(o1Tokens);
+    expect(getModelMaxTokens('o1-latest')).toBe(o1Tokens);
+    expect(getModelMaxTokens('o1-2024-12-17')).toBe(o1Tokens);
+    expect(getModelMaxTokens('o1-something-else')).toBe(o1Tokens);
+    expect(getModelMaxTokens('openai/o1-something-else')).toBe(o1Tokens);
+
+    // Mini variations
+    const o1MiniTokens = maxTokensMap[EModelEndpoint.openAI]['o1-mini'];
+    expect(getModelMaxTokens('o1-mini')).toBe(o1MiniTokens);
+    expect(getModelMaxTokens('o1-mini-latest')).toBe(o1MiniTokens);
+    expect(getModelMaxTokens('o1-mini-2024-09-12')).toBe(o1MiniTokens);
+    expect(getModelMaxTokens('o1-mini-something')).toBe(o1MiniTokens);
+    expect(getModelMaxTokens('openai/o1-mini-something')).toBe(o1MiniTokens);
+
+    // Preview variations
+    const o1PreviewTokens = maxTokensMap[EModelEndpoint.openAI]['o1-preview'];
+    expect(getModelMaxTokens('o1-preview')).toBe(o1PreviewTokens);
+    expect(getModelMaxTokens('o1-preview-latest')).toBe(o1PreviewTokens);
+    expect(getModelMaxTokens('o1-preview-2024-09-12')).toBe(o1PreviewTokens);
+    expect(getModelMaxTokens('o1-preview-something')).toBe(o1PreviewTokens);
+    expect(getModelMaxTokens('openai/o1-preview-something')).toBe(o1PreviewTokens);
   });
 });
 
@@ -359,8 +403,15 @@ describe('Meta Models Tests', () => {
     });
 
     test('should match Deepseek model variations', () => {
-      expect(getModelMaxTokens('deepseek-chat')).toBe(127500);
-      expect(getModelMaxTokens('deepseek-coder')).toBe(127500);
+      expect(getModelMaxTokens('deepseek-chat')).toBe(
+        maxTokensMap[EModelEndpoint.openAI]['deepseek'],
+      );
+      expect(getModelMaxTokens('deepseek-coder')).toBe(
+        maxTokensMap[EModelEndpoint.openAI]['deepseek'],
+      );
+      expect(getModelMaxTokens('deepseek-reasoner')).toBe(
+        maxTokensMap[EModelEndpoint.openAI]['deepseek-reasoner'],
+      );
     });
   });
 

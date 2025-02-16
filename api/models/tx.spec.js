@@ -4,6 +4,7 @@ const {
   tokenValues,
   getValueKey,
   getMultiplier,
+  cacheTokenValues,
   getCacheMultiplier,
 } = require('./tx');
 
@@ -211,6 +212,7 @@ describe('getMultiplier', () => {
 
 describe('AWS Bedrock Model Tests', () => {
   const awsModels = [
+    'anthropic.claude-3-5-haiku-20241022-v1:0',
     'anthropic.claude-3-haiku-20240307-v1:0',
     'anthropic.claude-3-sonnet-20240229-v1:0',
     'anthropic.claude-3-opus-20240229-v1:0',
@@ -237,6 +239,9 @@ describe('AWS Bedrock Model Tests', () => {
     'ai21.j2-ultra-v1',
     'amazon.titan-text-lite-v1',
     'amazon.titan-text-express-v1',
+    'amazon.nova-micro-v1:0',
+    'amazon.nova-lite-v1:0',
+    'amazon.nova-pro-v1:0',
   ];
 
   it('should return the correct prompt multipliers for all models', () => {
@@ -258,14 +263,57 @@ describe('AWS Bedrock Model Tests', () => {
   });
 });
 
+describe('Deepseek Model Tests', () => {
+  const deepseekModels = ['deepseek-chat', 'deepseek-coder', 'deepseek-reasoner'];
+
+  it('should return the correct prompt multipliers for all models', () => {
+    const results = deepseekModels.map((model) => {
+      const valueKey = getValueKey(model);
+      const multiplier = getMultiplier({ valueKey, tokenType: 'prompt' });
+      return tokenValues[valueKey].prompt && multiplier === tokenValues[valueKey].prompt;
+    });
+    expect(results.every(Boolean)).toBe(true);
+  });
+
+  it('should return the correct completion multipliers for all models', () => {
+    const results = deepseekModels.map((model) => {
+      const valueKey = getValueKey(model);
+      const multiplier = getMultiplier({ valueKey, tokenType: 'completion' });
+      return tokenValues[valueKey].completion && multiplier === tokenValues[valueKey].completion;
+    });
+    expect(results.every(Boolean)).toBe(true);
+  });
+
+  it('should return the correct prompt multipliers for reasoning model', () => {
+    const model = 'deepseek-reasoner';
+    const valueKey = getValueKey(model);
+    expect(valueKey).toBe(model);
+    const multiplier = getMultiplier({ valueKey, tokenType: 'prompt' });
+    const result = tokenValues[valueKey].prompt && multiplier === tokenValues[valueKey].prompt;
+    expect(result).toBe(true);
+  });
+});
+
 describe('getCacheMultiplier', () => {
   it('should return the correct cache multiplier for a given valueKey and cacheType', () => {
-    expect(getCacheMultiplier({ valueKey: 'claude-3-5-sonnet', cacheType: 'write' })).toBe(3.75);
-    expect(getCacheMultiplier({ valueKey: 'claude-3-5-sonnet', cacheType: 'read' })).toBe(0.3);
-    expect(getCacheMultiplier({ valueKey: 'claude-3-5-haiku', cacheType: 'write' })).toBe(1.25);
-    expect(getCacheMultiplier({ valueKey: 'claude-3-5-haiku', cacheType: 'read' })).toBe(0.1);
-    expect(getCacheMultiplier({ valueKey: 'claude-3-haiku', cacheType: 'write' })).toBe(0.3);
-    expect(getCacheMultiplier({ valueKey: 'claude-3-haiku', cacheType: 'read' })).toBe(0.03);
+    expect(getCacheMultiplier({ valueKey: 'claude-3-5-sonnet', cacheType: 'write' })).toBe(
+      cacheTokenValues['claude-3-5-sonnet'].write,
+    );
+    expect(getCacheMultiplier({ valueKey: 'claude-3-5-sonnet', cacheType: 'read' })).toBe(
+      cacheTokenValues['claude-3-5-sonnet'].read,
+    );
+    expect(getCacheMultiplier({ valueKey: 'claude-3-5-haiku', cacheType: 'write' })).toBe(
+      cacheTokenValues['claude-3-5-haiku'].write,
+    );
+    expect(getCacheMultiplier({ valueKey: 'claude-3-5-haiku', cacheType: 'read' })).toBe(
+      cacheTokenValues['claude-3-5-haiku'].read,
+    );
+    expect(getCacheMultiplier({ valueKey: 'claude-3-haiku', cacheType: 'write' })).toBe(
+      cacheTokenValues['claude-3-haiku'].write,
+    );
+    expect(getCacheMultiplier({ valueKey: 'claude-3-haiku', cacheType: 'read' })).toBe(
+      cacheTokenValues['claude-3-haiku'].read,
+    );
   });
 
   it('should return null if cacheType is provided but not found in cacheTokenValues', () => {
@@ -330,5 +378,83 @@ describe('getCacheMultiplier', () => {
         cacheType: 'read',
       }),
     ).toBe(0.03);
+  });
+});
+
+describe('Google Model Tests', () => {
+  const googleModels = [
+    'gemini-2.0-flash-lite-preview-02-05',
+    'gemini-2.0-flash-001',
+    'gemini-2.0-flash-exp',
+    'gemini-2.0-pro-exp-02-05',
+    'gemini-1.5-flash-8b',
+    'gemini-1.5-flash-thinking',
+    'gemini-1.5-pro-latest',
+    'gemini-1.5-pro-preview-0409',
+    'gemini-pro-vision',
+    'gemini-1.0',
+    'gemini-pro',
+  ];
+
+  it('should return the correct prompt and completion rates for all models', () => {
+    const results = googleModels.map((model) => {
+      const valueKey = getValueKey(model, EModelEndpoint.google);
+      const promptRate = getMultiplier({
+        model,
+        tokenType: 'prompt',
+        endpoint: EModelEndpoint.google,
+      });
+      const completionRate = getMultiplier({
+        model,
+        tokenType: 'completion',
+        endpoint: EModelEndpoint.google,
+      });
+      return { model, valueKey, promptRate, completionRate };
+    });
+
+    results.forEach(({ valueKey, promptRate, completionRate }) => {
+      expect(promptRate).toBe(tokenValues[valueKey].prompt);
+      expect(completionRate).toBe(tokenValues[valueKey].completion);
+    });
+  });
+
+  it('should map to the correct model keys', () => {
+    const expected = {
+      'gemini-2.0-flash-lite-preview-02-05': 'gemini-2.0-flash-lite',
+      'gemini-2.0-flash-001': 'gemini-2.0-flash',
+      'gemini-2.0-flash-exp': 'gemini-2.0-flash',
+      'gemini-2.0-pro-exp-02-05': 'gemini-2.0',
+      'gemini-1.5-flash-8b': 'gemini-1.5-flash-8b',
+      'gemini-1.5-flash-thinking': 'gemini-1.5-flash',
+      'gemini-1.5-pro-latest': 'gemini-1.5',
+      'gemini-1.5-pro-preview-0409': 'gemini-1.5',
+      'gemini-pro-vision': 'gemini-pro-vision',
+      'gemini-1.0': 'gemini',
+      'gemini-pro': 'gemini',
+    };
+
+    Object.entries(expected).forEach(([model, expectedKey]) => {
+      const valueKey = getValueKey(model, EModelEndpoint.google);
+      expect(valueKey).toBe(expectedKey);
+    });
+  });
+
+  it('should handle model names with different formats', () => {
+    const testCases = [
+      { input: 'google/gemini-pro', expected: 'gemini' },
+      { input: 'gemini-pro/google', expected: 'gemini' },
+      { input: 'google/gemini-2.0-flash-lite', expected: 'gemini-2.0-flash-lite' },
+    ];
+
+    testCases.forEach(({ input, expected }) => {
+      const valueKey = getValueKey(input, EModelEndpoint.google);
+      expect(valueKey).toBe(expected);
+      expect(
+        getMultiplier({ model: input, tokenType: 'prompt', endpoint: EModelEndpoint.google }),
+      ).toBe(tokenValues[expected].prompt);
+      expect(
+        getMultiplier({ model: input, tokenType: 'completion', endpoint: EModelEndpoint.google }),
+      ).toBe(tokenValues[expected].completion);
+    });
   });
 });

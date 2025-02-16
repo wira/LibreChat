@@ -35,6 +35,9 @@ const agentSchema = mongoose.Schema(
     model_parameters: {
       type: Object,
     },
+    artifacts: {
+      type: String,
+    },
     access_level: {
       type: Number,
     },
@@ -57,6 +60,15 @@ const agentSchema = mongoose.Schema(
     authorName: {
       type: String,
       default: undefined,
+    },
+    hide_sequential_outputs: {
+      type: Boolean,
+    },
+    end_after_tools: {
+      type: Boolean,
+    },
+    agent_ids: {
+      type: [String],
     },
     isCollaborative: {
       type: Boolean,

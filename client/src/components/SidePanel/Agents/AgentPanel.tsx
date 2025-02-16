@@ -8,7 +8,6 @@ import {
   isAssistantsEndpoint,
   defaultAgentFormValues,
 } from 'librechat-data-provider';
-import type { TConfig } from 'librechat-data-provider';
 import type { AgentForm, AgentPanelProps, StringOption } from '~/common';
 import {
   useCreateAgentMutation,
@@ -21,6 +20,7 @@ import { createProviderOption } from '~/utils';
 import { useToastContext } from '~/Providers';
 import AgentConfig from './AgentConfig';
 import AgentSelect from './AgentSelect';
+import { Button } from '~/components';
 import ModelPanel from './ModelPanel';
 import { Panel } from '~/common';
 
@@ -33,7 +33,7 @@ export default function AgentPanel({
   setCurrentAgentId,
   agentsConfig,
   endpointsConfig,
-}: AgentPanelProps & { agentsConfig?: TConfig | null }) {
+}: AgentPanelProps) {
   const localize = useLocalize();
   const { user } = useAuthContext();
   const { showToast } = useToastContext();
@@ -61,8 +61,7 @@ export default function AgentPanel({
             !isAssistantsEndpoint(key) &&
             key !== EModelEndpoint.agents &&
             key !== EModelEndpoint.chatGPTBrowser &&
-            key !== EModelEndpoint.gptPlugins &&
-            key !== EModelEndpoint.bingAI,
+            key !== EModelEndpoint.gptPlugins,
         )
         .map((provider) => createProviderOption(provider)),
     [endpointsConfig],
@@ -121,11 +120,15 @@ export default function AgentPanel({
 
       const {
         name,
+        artifacts,
         description,
         instructions,
         model: _model,
         model_parameters,
         provider: _provider,
+        agent_ids,
+        end_after_tools,
+        hide_sequential_outputs,
       } = data;
 
       const model = _model ?? '';
@@ -137,12 +140,16 @@ export default function AgentPanel({
           agent_id,
           data: {
             name,
+            artifacts,
             description,
             instructions,
             model,
             tools,
             provider,
             model_parameters,
+            agent_ids,
+            end_after_tools,
+            hide_sequential_outputs,
           },
         });
         return;
@@ -157,12 +164,16 @@ export default function AgentPanel({
 
       create.mutate({
         name,
+        artifacts,
         description,
         instructions,
         model,
         tools,
         provider,
         model_parameters,
+        agent_ids,
+        end_after_tools,
+        hide_sequential_outputs,
       });
     },
     [agent_id, create, update, showToast, localize],
@@ -176,7 +187,7 @@ export default function AgentPanel({
 
   const canEditAgent = useMemo(() => {
     const canEdit =
-      agentQuery.data?.isCollaborative ?? false
+      (agentQuery.data?.isCollaborative ?? false)
         ? true
         : agentQuery.data?.author === user?.id || user?.role === SystemRoles.ADMIN;
 
@@ -200,7 +211,7 @@ export default function AgentPanel({
         className="scrollbar-gutter-stable h-auto w-full flex-shrink-0 overflow-x-hidden"
         aria-label="Agent configuration form"
       >
-        <div className="flex w-full flex-wrap">
+        <div className="mt-2 flex w-full flex-wrap gap-2">
           <Controller
             name="agent"
             control={control}
@@ -217,15 +228,17 @@ export default function AgentPanel({
           />
           {/* Select Button */}
           {agent_id && (
-            <button
-              className="btn btn-primary focus:shadow-outline mx-2 mt-1 h-[40px] rounded bg-green-500 px-4 py-2 font-semibold text-white hover:bg-green-400 focus:border-green-500 focus:outline-none focus:ring-0"
-              type="button"
+            <Button
+              variant="submit"
               disabled={!agent_id}
-              onClick={handleSelectAgent}
+              onClick={(e) => {
+                e.preventDefault();
+                handleSelectAgent();
+              }}
               aria-label="Select agent"
             >
               {localize('com_ui_select')}
-            </button>
+            </Button>
           )}
         </div>
         {!canEditAgent && (
