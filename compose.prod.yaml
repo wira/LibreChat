@@ -41,6 +41,7 @@ services:
       - ./librechat.yaml:/app/librechat.yaml
       - api_images:/app/client/public/images
       - api_logs:/app/api/logs
+      - api_uploads:/app/uploads
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.librechat.rule=Host(`${URL_API}`)"
@@ -99,6 +100,7 @@ networks:
 volumes:
   api_images:
   api_logs:
+  api_uploads:
   mongodb_data:
   meilisearch_data:
   # pgdata2:
