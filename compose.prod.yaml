@@ -40,7 +40,7 @@ services:
     volumes:
       - ./librechat.yaml:/app/librechat.yaml
       - api_images:/app/client/public/images
-      - api_logs:/app/api/logs
+      - api_logs:/app/logs
       - api_uploads:/app/uploads
     labels:
       - "traefik.enable=true"
